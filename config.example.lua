@@ -18,9 +18,10 @@ Config.KillfeedDuration = 3000          -- 3 secondes d'affichage
 Config.Discord = {
     BaseURL = "https://discord.com/api/v10",
     GuildID = "1234567890123456789",               -- ID de votre serveur Discord
-    BotToken = "Bot MTQxNDxxxxxxxxxxxxxxxx.xxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxx",    -- Token de votre bot Discord
+    BotToken = GetConvar("DISCORD_BOT_TOKEN", ""),     -- Token récupéré depuis les variables serveur
+    CacheTTL = 300000,                        -- 5 minutes en millisecondes
     Headers = {
         ["Content-Type"] = "application/json",
-        ["Authorization"] = "Bot MTQxNDxxxxxxxxxxxxxxxx.xxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxx"  -- Même token que ci-dessus
+        ["Authorization"] = "" -- Sera construit dynamiquement
     }
 }

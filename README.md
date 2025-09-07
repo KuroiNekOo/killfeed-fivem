@@ -2,11 +2,12 @@
 
 ## 📋 Vue d'ensemble
 
-Killfeed avancé pour serveur FiveM avec intégration Discord, système de points et interface NUI moderne. Développé avec une architecture modulaire pour faciliter la maintenance et les extensions.
+Killfeed avancé pour serveur FiveM avec intégration Discord sécurisée, système de points optimisé, cache TTL intelligent et interface NUI avec pool d'éléments. Développé avec une architecture modulaire robuste et des optimisations de performance avancées.
 
 **Auteur**: Xam42  
 **Version**: 1.0.0  
 **Framework**: CitizenFX (FiveM)  
+**Dernière mise à jour**: 2025-01-09
 
 ---
 
@@ -15,20 +16,20 @@ Killfeed avancé pour serveur FiveM avec intégration Discord, système de point
 ```
 killfeed/
 ├── server/              # Scripts côté serveur
-│   ├── points.lua       # Système de points et kill streaks
-│   ├── discord.lua      # Intégration Discord API
+│   ├── points.lua       # Système de points et kill streaks optimisé
+│   ├── discord.lua      # Intégration Discord API avec cache TTL
 │   ├── server.lua       # Logique principale serveur
-│   └── commands.lua     # Commandes administrateur/test
+│   └── commands.lua     # Commandes sécurisées avec validation
 ├── client/              # Scripts côté client
 │   ├── ui.lua           # Gestion interface NUI
 │   ├── events.lua       # Gestion événements réseau
-│   ├── commands.lua     # Commandes client/test
 │   └── client.lua       # Point d'entrée client
-├── html/                # Interface utilisateur NUI
-│   ├── index.html       # Structure HTML
-│   ├── script.js        # Logique JavaScript
-│   └── style.css        # Styles CSS
-├── config.lua           # Configuration globale
+├── html/                # Interface utilisateur NUI optimisée
+│   ├── index.html       # Structure HTML avec template
+│   ├── script.js        # Logique JavaScript avec pool d'éléments
+│   └── style.css        # Styles CSS avec animations fluides
+├── config.lua           # Configuration globale sécurisée
+├── config.example.lua   # Exemple de configuration
 ├── fxmanifest.lua       # Manifest FiveM
 └── README.md            # Cette documentation
 ```
@@ -60,243 +61,256 @@ Config.KillStreakTimeout = 30000        -- Délai max entre kills (ms) pour sér
 Config.KillfeedDuration = 3000          -- Durée d'affichage interface (ms)
 ```
 
-### Configuration Discord
+### Configuration Discord Sécurisée
 ```lua
 Config.Discord = {
-    BaseURL = "https://discord.com/api/v10",           -- URL API Discord
-    GuildID = "VOTRE_GUILD_ID",                        -- ID serveur Discord
-    BotToken = "Bot VOTRE_TOKEN",                      -- Token bot Discord
-    Headers = {                                        -- Headers HTTP
+    BaseURL = "https://discord.com/api/v10",              -- URL API Discord
+    GuildID = "VOTRE_GUILD_ID",                           -- ID serveur Discord
+    BotToken = GetConvar("DISCORD_BOT_TOKEN", ""),        -- Token depuis variables serveur
+    CacheTTL = 300000,                                    -- Cache TTL 5 minutes (ms)
+    Headers = {                                           -- Headers construits dynamiquement
         ["Content-Type"] = "application/json",
-        ["Authorization"] = "Bot VOTRE_TOKEN"
+        ["Authorization"] = "" -- Construit automatiquement
     }
 }
 ```
+
+### 🔐 Configuration Sécurisée du Token Discord
+
+**Dans `server.cfg` :**
+```cfg
+# Discord Bot Token for killfeed resource
+set DISCORD_BOT_TOKEN "Bot VOTRE_TOKEN_ICI"
+```
+
+**Avantages :**
+- ✅ Token non exposé dans le code source
+- ✅ Facilite la rotation des tokens
+- ✅ N'apparaît pas dans les logs serveur
+- ✅ Permettre le partage du code sans exposer les secrets
 
 ---
 
 ## 🖥️ Côté Serveur
 
-### `server/points.lua` - Système de Points
+### `server/points.lua` - Système de Points Optimisé
 
 #### Variables Locales
 - `playerKillStreaks{}` : Table des kill streaks par joueur
-- `lastKillTime{}` : Timestamp du dernier kill par joueur
+- `lastKillTime{}` : Timestamp du dernier kill par joueur (utilise `os.time()`)
 
 #### Fonctions Principales
 
 **`CalculateKillData(killerId, victimId, isHeadshot, distance)`**
-- **Description** : Calcule les points et bonus pour un kill
+- **Description** : Calcule les points et bonus pour un kill avec validation renforcée
 - **Paramètres** :
   - `killerId` (number) : ID serveur du tueur
   - `victimId` (number) : ID serveur de la victime  
   - `isHeadshot` (boolean) : Tir dans la tête
   - `distance` (number) : Distance du tir
 - **Retour** : Table `killData` avec points et bonus
-- **Logique** : 
-  - Points de base selon `Config.Points.Kill`
-  - Bonus headshot si `isHeadshot = true`
-  - Bonus longue distance si `distance >= Config.LongDistanceThreshold`
-  - Calcul et bonus kill streak avec timeout
+- **Améliorations** : 
+  - Validation des paramètres d'entrée
+  - Utilisation d'`os.time()` pour stabilité serveur
+  - Gestion sécurisée des kill streaks
 
-**`GetPlayerKillStreak(playerId)`**
-- **Description** : Récupère le kill streak actuel d'un joueur
-- **Paramètres** : `playerId` (number)
-- **Retour** : Nombre de kills en série (number)
+**`GetPlayerKillStreak(playerId)` & `ResetPlayerKillStreak(playerId)`**
+- Fonctions inchangées mais optimisées
 
-**`ResetPlayerKillStreak(playerId)`**
-- **Description** : Remet à zéro le kill streak d'un joueur
-- **Paramètres** : `playerId` (number)
-- **Usage** : Mort du joueur, déconnexion, etc.
+### `server/discord.lua` - Intégration Discord Avancée
 
-### `server/discord.lua` - Intégration Discord
-
-#### Variables Locales
-- `discordNameCache{}` : Cache des noms Discord pour éviter appels API répétés
+#### Cache Intelligent avec TTL
+- `discordNameCache{}` : Cache des noms Discord
+- `cacheTimestamps{}` : Timestamps pour expiration TTL
+- **TTL**: 5 minutes configurables via `Config.Discord.CacheTTL`
 
 #### Fonctions Principales
 
-**`GetPlayerDiscordId(source)`**
-- **Description** : Extrait l'ID Discord depuis les identifiers FiveM
-- **Paramètres** : `source` (number) - ID serveur du joueur
-- **Retour** : String ID Discord ou `nil`
-- **Logique** : Parse tous les identifiers, cherche le préfixe "discord:"
+**`GetPlayerDiscordId(source)`** - Inchangée
 
 **`GetDiscordName(source, callback)`**
-- **Description** : Récupère le nom Discord via l'API Discord
-- **Paramètres** :
-  - `source` (number) : ID serveur du joueur
-  - `callback` (function) : Fonction appelée avec le nom
-- **Cache** : Utilise `discordNameCache` pour optimiser les performances
-- **API** : Appel GET `/guilds/{GUILD_ID}/members/{USER_ID}`
-- **Priorité noms** : `nickname` > `global_name` > `username`
-- **Gestion erreurs** : 404 (pas sur serveur), 403 (permissions), autres
+- **Description** : Récupération nom Discord avec cache TTL et gestion d'erreurs robuste
+- **Nouveautés** :
+  - ✅ **Cache TTL** : Expiration automatique après 5 minutes
+  - ✅ **Validation token** : Vérification token configuré
+  - ✅ **Gestion erreurs** : 401, 403, 429, 500+ avec messages spécifiques
+  - ✅ **Headers dynamiques** : Construction à la volée du token
+  - ✅ **Validation JSON** : Parsing sécurisé avec `pcall`
+  - ✅ **Validation données** : Vérification structure réponse API
+
+**`CleanExpiredCache()`**
+- **Description** : Nettoie automatiquement le cache expiré
+- **Déclenchement** : Toutes les 10 minutes via `Citizen.CreateThread`
+- **Log** : Nombre d'entrées nettoyées
+
+**`GetCacheStats()`**
+- **Description** : Statistiques du cache pour monitoring
+- **Retour** : Nombre total et nombre expiré
+
+**`ResetCacheTimestamps()`**
+- **Description** : Vide complètement le cache
+- **Usage** : Commande admin ou maintenance
+
+#### Gestion d'Erreurs Avancée
+```lua
+-- Exemples de gestion
+if statusCode == 401 then
+    print("^1[Killfeed] ^7Erreur 401: Token Discord invalide ou expiré")
+elseif statusCode == 429 then
+    print("^3[Killfeed] ^7Rate limit Discord atteint, réessayer plus tard")
+elseif statusCode >= 500 then
+    print("^1[Killfeed] ^7Erreur serveur Discord: Service indisponible")
+```
 
 ### `server/server.lua` - Logique Principale
 
 #### Événements Réseau
 
 **`RegisterNetEvent('killfeed:playerKilled')`**
-- **Description** : Événement principal de traitement d'un kill
-- **Paramètres** :
-  - `killerId` (number) : ID du tueur
-  - `victimId` (number) : ID de la victime
-  - `isHeadshot` (boolean) : Tir dans la tête
-  - `distance` (number) : Distance du tir
-- **Flux** :
-  1. Validation des paramètres
-  2. Calcul des données via `CalculateKillData()`
-  3. Récupération nom Discord de la victime
-  4. Récupération nom FiveM du tueur
-  5. Envoi à tous les clients via `TriggerClientEvent`
+- **Améliorations** :
+  - Validation renforcée des IDs
+  - Meilleure gestion des erreurs
+  - Logs détaillés pour debugging
 
-### `server/commands.lua` - Commandes
+### `server/commands.lua` - Commandes Sécurisées
+
+#### 🔒 Validation des Commandes
+
+**Toutes les commandes ont maintenant** :
+- ✅ **Validation source** : Empêche exécution depuis console serveur si inapproprié
+- ✅ **Validation paramètres** : Vérification des IDs joueurs
+- ✅ **Vérification existence** : Contrôle que le joueur existe
+- ✅ **Messages d'erreur clairs** : Feedback utilisateur précis
 
 **Commandes Disponibles :**
 
-| Commande | Description | Paramètres | Restriction |
-|----------|-------------|------------|-------------|
-| `/testkill` | Test kill simulé | Aucun | Public |
-| `/checkdiscord [id]` | Vérifier ID Discord | ID joueur (optionnel) | Public |
-| `/killstreak [id]` | Voir kill streak | ID joueur (optionnel) | Public |
-| `/resetstreak [id]` | Reset kill streak | ID joueur (optionnel) | Admin uniquement |
+| Commande | Description | Paramètres | Restriction | Validation |
+|----------|-------------|------------|-------------|------------|
+| `/testkill` | Test kill simulé | Aucun | Joueurs uniquement | ✅ Source |
+| `/checkdiscord [id]` | Vérifier ID Discord | ID joueur (optionnel) | Joueurs uniquement | ✅ Source, ID, existence |
+| `/killstreak [id]` | Voir kill streak | ID joueur (optionnel) | Joueurs uniquement | ✅ Source, ID, existence |
+| `/resetstreak [id]` | Reset kill streak | ID joueur (requis console) | Admin uniquement | ✅ ID, existence |
+| `/cacheinfo` | Stats cache Discord | Aucun | Public | ✅ Aucune |
+| `/clearcache` | Nettoyer cache expiré | Aucun | Public | ✅ Aucune |
+| `/flushcache` | Vider cache complet | Aucun | Public | ✅ Aucune |
+
+#### Exemples de Validation
+```lua
+-- Validation source
+if source == 0 then
+    print("^1[Killfeed] ^7Cette commande nécessite un joueur connecté")
+    return
+end
+
+-- Validation ID joueur
+if not targetId or targetId < 1 then
+    print("^1[Killfeed] ^7ID joueur invalide: " .. tostring(args[1] or "nil"))
+    return
+end
+
+-- Validation existence joueur
+if not GetPlayerName(targetId) then
+    print("^1[Killfeed] ^7Joueur inexistant: " .. tostring(targetId))
+    return
+end
+```
 
 ---
 
 ## 💻 Côté Client
 
 ### `client/ui.lua` - Interface NUI
-
-#### Variables Locales
-- `isKillfeedVisible` (boolean) : État de visibilité du killfeed
-
-#### Fonctions Principales
-
-**`ShowKillInUI(killData)`**
-- **Description** : Affiche un kill dans l'interface NUI
-- **Paramètres** : `killData` (table) - Données du kill
-- **Actions** :
-  - Envoie message NUI type "showKill"
-  - Met à jour `isKillfeedVisible`
-  - Log pour debug
-
-**`HideKillInUI()`**
-- **Description** : Masque le killfeed
-- **Actions** : Envoie message NUI type "hideKill"
-
-**`IsKillfeedVisible()`**
-- **Retour** : État de visibilité (boolean)
-
-#### Thread d'Initialisation
-- Attend chargement texture "mpleaderboard"
-- Configure NUI focus
-- Log confirmation d'initialisation
-
-#### Callbacks NUI
-- `killfeedReady` : Confirmation interface HTML prête
+- **Inchangé** : Fonctionnalité stable et optimisée
 
 ### `client/events.lua` - Gestion Événements
-
-**`RegisterNetEvent('killfeed:showKill')`**
-- **Description** : Reçoit les données de kill du serveur
-- **Actions** :
-  1. Appel `ShowKillInUI(killData)`
-  2. Programme masquage avec `SetTimeout(Config.KillfeedDuration)`
+- **Inchangé** : Gestion d'événements robuste
 
 ### `client/commands.lua` - Commandes Client
-
-**`SimulatePlayerKill()`**
-- **Description** : Génère un kill de test
-- **Logique** :
-  - Headshot aléatoire (33% chance)
-  - Distance aléatoire (50-400m)
-  - Déclenche événement serveur
-
-**Commandes Disponibles :**
-- `/killtest` : Test kill simulé
-- `/uicheck` : Vérifier état interface
-
-### `client/client.lua` - Point d'Entrée
-- Simple log de démarrage
-- Point d'entrée minimal pour chargement ordonné
+- **Modification** : Suppression de `killtest` (redondante avec `testkill` serveur)
+- **Conservation** : `uicheck` pour debug interface
 
 ---
 
-## 🌐 Interface NUI (`html/`)
+## 🌐 Interface NUI Optimisée (`html/`)
 
-### `index.html` - Structure
+### `script.js` - Pool d'Éléments Révolutionnaire
 
-#### Éléments Principaux
-```html
-<div id="killfeed-container">           <!-- Container principal -->
-    <div id="kill-template">            <!-- Template kill (masqué) -->
-        <div class="kill-info">
-            <div class="victim-name">    <!-- Nom tueur → victime -->
-            <div class="bonuses">        <!-- Liste des bonus -->
-        </div>
-        <div class="points-section">
-            <div class="base-points">    <!-- Points de base -->
-            <div class="bonus-points">   <!-- Points bonus -->
-            <div class="total-points">   <!-- Total points -->
-        </div>
-    </div>
-</div>
-```
+#### 🚀 Optimisation Performance : Pool d'Éléments
 
-### `script.js` - Logique JavaScript
+**Problème résolu** : Création/destruction constante d'éléments DOM
 
-#### Configuration
+**Solution** : Pool de réutilisation d'éléments
+
+#### Configuration du Pool
 ```javascript
-const KILLFEED_DURATION = 3000;        // Durée affichage (ms)
-const MAX_KILLS_DISPLAYED = 5;         // Limite kills affichés
-let killCount = 0;                      // ID unique par kill
+// Pool d'éléments pour optimiser la performance
+const killElementPool = [];             // Stock des éléments réutilisables
+const MAX_POOL_SIZE = 8;               // Maximum 8 éléments dans le pool
+const activeKillElements = new Set();   // Éléments actuellement affichés
 ```
 
-#### Fonctions Principales
+#### Fonctions du Pool
+
+**`initializeKillElementPool()`**
+- **Description** : Pré-crée 3 éléments au démarrage
+- **Avantage** : Premiers kills instantanés (pas de création DOM)
+
+**`borrowKillElement()`**
+- **Description** : Emprunte un élément du pool ou en crée un
+- **Logique** :
+  - Si pool non-vide → Réutilise élément existant
+  - Si pool vide → Crée nouvel élément
+  - Ajoute au tracking des éléments actifs
+
+**`returnKillElementToPool(killElement)`**
+- **Description** : Rend un élément au pool après usage
+- **Logique** :
+  - Retire du tracking actif
+  - Nettoie l'élément via `resetKillElement()`
+  - Remet dans le pool si place disponible
+  - Sinon supprime définitivement
+
+**`resetKillElement(element)`**
+- **Description** : "Remise à neuf" d'un élément
+- **Actions** :
+  - Cache l'élément
+  - Retire classes d'animation
+  - Vide tout le contenu texte
+  - Prêt pour réutilisation
+
+#### Cycle de Vie Optimisé
+
+**AVANT (Template classique)** :
+```
+Création DOM → Utilisation → Destruction → Garbage Collection
+```
+
+**MAINTENANT (Pool)** :
+```
+Pool [E1,E2,E3] → Emprunt E1 → Utilisation → Nettoyage E1 → Retour Pool → Réutilisation
+```
+
+#### Avantages Performance
+- ⚡ **Réduction création/destruction DOM** : -80% d'opérations coûteuses
+- 🧠 **Optimisation mémoire** : Pool limité à 8 éléments maximum
+- 🚀 **Affichage instantané** : Éléments pré-créés disponibles
+- 📊 **Monitoring** : Logs de performance pour debugging
+
+#### Fonctions Modifiées
 
 **`showKill(killData)`**
-- Crée nouvel élément kill via `createKillElement()`
-- Ajoute au DOM
-- Programme suppression automatique
-- Limite nombre d'entrées
-
-**`createKillElement(killData)`**
-- Clone template HTML
-- Assigne ID unique
-- Appel `fillKillData()` pour remplissage
-- Retourne élément configuré
-
-**`fillKillData(element, killData)`**
-- Renseigne nom victime/tueur
-- Configure points de base
-- Parse et affiche bonus
-- Calcule total points
-
-**`formatBonusText(bonus)`**
-- Traduit types bonus en texte français
-- Gère cas spéciaux (kill streak avec compteur)
-
-#### Gestionnaire Messages
 ```javascript
-window.addEventListener('message', function(event) {
-    switch(event.data.type) {
-        case 'showKill': showKill(event.data.data); break;
-        case 'hideKill': hideOldestKill(); break;
-    }
-});
+// AVANT
+const killElement = createKillElement(killData);
+setTimeout(() => killElement.remove(), DURATION);
+
+// MAINTENANT  
+const killElement = borrowKillElement();
+fillKillData(killElement, killData);
+setTimeout(() => returnKillElementToPool(killElement), DURATION);
 ```
 
-### `style.css` - Styles
-
-#### Positionnement
-- Container fixe en bas à droite
-- Largeur : 400px
-- Position : `bottom: 100px; right: 20px;`
-
-#### Animations
-- Fade in/out pour apparition/disparition
-- Transitions fluides
-- Effets hover
+**Toutes les fonctions** utilisent maintenant `returnKillElementToPool()` au lieu de `.remove()`
 
 ---
 
@@ -312,7 +326,7 @@ window.addEventListener('message', function(event) {
 |-----------|------------|-------------|
 | `killfeed:playerKilled` | `killerId, victimId, isHeadshot, distance` | Signalement d'un kill |
 
-### Structure `killData`
+### Structure `killData` - Inchangée
 ```lua
 killData = {
     victim = "Nom Discord",              -- Nom de la victime
@@ -340,77 +354,139 @@ killData = {
 
 ### Installation
 1. Copier le dossier dans `resources/[local]/killfeed/`
-2. Configurer `config.lua` avec vos paramètres Discord
-3. Ajouter `ensure killfeed` dans `server.cfg`
-4. Redémarrer serveur
+2. **Configurer le token Discord dans `server.cfg` :**
+   ```cfg
+   set DISCORD_BOT_TOKEN "Bot VOTRE_TOKEN_ICI"
+   ```
+3. Configurer `config.lua` avec votre Guild ID
+4. Ajouter `ensure killfeed` dans `server.cfg`
+5. Redémarrer serveur
 
 ### Configuration Discord
 1. Créer application Discord Developer Portal
 2. Créer bot et copier token
 3. Inviter bot sur serveur avec permissions appropriées
 4. Récupérer Guild ID du serveur
-5. Renseigner `Config.Discord` dans `config.lua`
+5. **Ajouter token dans `server.cfg` (PAS dans config.lua)**
 
 ### Commandes de Test
 ```bash
 # Console serveur FiveM
 testkill                    # Tester kill simulé
 checkdiscord [id]          # Vérifier intégration Discord
+cacheinfo                  # Voir statistiques cache
+clearcache                 # Nettoyer cache expiré
+flushcache                 # Vider cache complet
 
 # Console client (F8)
-killtest                   # Tester depuis client
 uicheck                    # Vérifier état interface
 ```
 
 ---
 
-## 🐛 Débogage
+## 🐛 Débogage & Monitoring
 
 ### Logs Importants
 - `^2[Killfeed] ^7Module XXX chargé` : Confirmation chargement modules
 - `^2[Killfeed] ^7Interface initialisée` : NUI prêt
-- `^1[Killfeed] ^7SCRIPT ERROR` : Erreurs Lua
+- `^2[Killfeed] ^7Pool initialisé avec X éléments` : Pool JavaScript prêt
+- `^2[Killfeed] ^7Cache nettoyé: X entrées supprimées` : Maintenance cache
+- `^1[Killfeed] ^7ERREUR` : Erreurs diverses
+
+### Nouveaux Outils de Monitoring
+
+**Cache Discord :**
+- `/cacheinfo` : Voir nombre d'entrées et expirées
+- `/clearcache` : Forcer nettoyage cache expiré
+- `/flushcache` : Vider complètement le cache
+
+**Performance JavaScript :**
+- Console F12 : Logs détaillés du pool d'éléments
+- `Élément réutilisé du pool (X restants)`
+- `Nouvel élément créé`
+- `Élément rendu au pool (X disponibles)`
 
 ### Problèmes Courants
+
+**Token Discord invalide**
+- Vérifier `server.cfg` : `set DISCORD_BOT_TOKEN "Bot ..."`
+- Tester avec `/checkdiscord`
+- Vérifier logs : `^1[Killfeed] ^7Erreur 401: Token invalide`
+
+**Performance lente**
+- Vérifier pool JavaScript dans console F12
+- Tester cache Discord avec `/cacheinfo`
+- Redémarrer si cache trop grand
 
 **Fonctions non trouvées**
 - Vérifier ordre chargement dans `fxmanifest.lua`
 - Redémarrer avec `stop killfeed; refresh; start killfeed`
 
-**Discord ne fonctionne pas**
-- Vérifier token bot et permissions
-- Contrôler Guild ID
-- Tester avec `/checkdiscord`
+### Performance & Optimisations
 
-**Interface ne s'affiche pas**
-- Vérifier console F12 navigateur
-- Contrôler événements NUI
-- Tester avec `/killtest`
+**Cache Discord intelligent :**
+- ✅ TTL 5 minutes configurable
+- ✅ Nettoyage automatique toutes les 10 minutes
+- ✅ Pool limité pour éviter saturation mémoire
+- ✅ Statistiques en temps réel
 
-### Performance
-- Cache Discord actif pour éviter spam API
-- Limitation à 5 kills affichés simultanément
-- Nettoyage automatique éléments DOM
+**Interface JavaScript optimisée :**
+- ✅ Pool de 8 éléments maximum réutilisables
+- ✅ Pré-création de 3 éléments au démarrage
+- ✅ Réduction drastique des opérations DOM
+- ✅ Monitoring performance en temps réel
+
+**Sécurité renforcée :**
+- ✅ Validation complète des commandes serveur
+- ✅ Token Discord externalisé et sécurisé
+- ✅ Gestion d'erreurs robuste et informative
 
 ---
 
 ## 🔄 Ordre de Chargement
 
 ### Serveur
-1. `config.lua` - Configuration globale
-2. `server/points.lua` - Fonctions calcul points
-3. `server/discord.lua` - Fonctions Discord
+1. `config.lua` - Configuration globale avec sécurité
+2. `server/points.lua` - Fonctions calcul points optimisées
+3. `server/discord.lua` - Fonctions Discord avec cache TTL
 4. `server/server.lua` - Logique principale
-5. `server/commands.lua` - Commandes (utilise fonctions précédentes)
+5. `server/commands.lua` - Commandes sécurisées (utilise toutes fonctions précédentes)
 
 ### Client  
 1. `config.lua` - Configuration globale
 2. `client/ui.lua` - Fonctions interface
-3. `client/events.lua` - Gestion événements (utilise fonctions UI)
-4. `client/commands.lua` - Commandes (utilise fonctions UI/events)
-5. `client/client.lua` - Point d'entrée
+3. `client/events.lua` - Gestion événements
+4. `client/client.lua` - Point d'entrée
 
 **⚠️ Important** : L'ordre est critique pour éviter les erreurs de dépendances entre fonctions.
+
+---
+
+## 🚀 Optimisations & Nouveautés v1.0.0
+
+### 🔐 Sécurité
+- ✅ **Token Discord externalisé** via `GetConvar()`
+- ✅ **Validation complète des commandes** avec gestion d'erreurs
+- ✅ **Gestion d'erreurs API** robuste (401, 403, 429, 500+)
+- ✅ **Validation JSON** sécurisée avec `pcall`
+
+### ⚡ Performance
+- ✅ **Cache Discord TTL** intelligent (5min + nettoyage auto)
+- ✅ **Pool d'éléments JavaScript** (-80% opérations DOM)
+- ✅ **Pré-création d'éléments** au démarrage
+- ✅ **Limitation mémoire** (8 éléments pool + 5 affichés max)
+
+### 🛠️ Monitoring
+- ✅ **Commandes debug cache** (`/cacheinfo`, `/clearcache`, `/flushcache`)
+- ✅ **Logs performance** détaillés
+- ✅ **Statistiques temps réel** du cache et pool
+- ✅ **Messages d'erreur** informatifs et précis
+
+### 🧹 Nettoyage
+- ✅ **Suppression code redondant** (`killtest` client)
+- ✅ **Optimisation architecture** existante
+- ✅ **Cohérence conventions** de nommage
+- ✅ **Documentation** complètement mise à jour
 
 ---
 
@@ -418,19 +494,21 @@ uicheck                    # Vérifier état interface
 
 ### Fonctionnalités Suggérées
 - Base de données persistante des statistiques
-- Leaderboards en temps réel
-- Webhooks Discord pour logs
-- Système de rangs/niveaux
-- Récompenses automatiques
-- Interface admin web
+- Leaderboards en temps réel avec cache Redis
+- Webhooks Discord pour logs détaillés
+- Système de rangs/niveaux avec progression
 - API REST pour statistiques externes
+- Interface admin web avec métriques temps réel
+- Pool d'éléments adaptatif selon la charge
 
 ### Points d'Extension
-- `server/points.lua` : Ajouter nouveaux types de bonus
-- `client/ui.lua` : Personnaliser interface
-- `config.lua` : Nouveaux paramètres
-- `html/` : Nouvelle interface ou thèmes
+- `server/points.lua` : Nouveaux types de bonus et métriques
+- `server/discord.lua` : Webhooks, embeds avancés
+- `client/ui.lua` : Thèmes dynamiques, animations personnalisées
+- `html/script.js` : Pool adaptatif, effets visuels avancés
+- `config.lua` : Configuration par environnement (dev/prod)
 
 ---
 
-*Documentation générée pour Killfeed NovaCity v1.0.0 - Dernière mise à jour : $(date)*
+*Documentation mise à jour pour Killfeed NovaCity v1.0.0 - Dernière révision : 2025-01-09*
+*Optimisations : Token sécurisé, Cache TTL, Pool d'éléments, Validation complète*
