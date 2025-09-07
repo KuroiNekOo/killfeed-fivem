@@ -5,17 +5,9 @@ const KILLFEED_DURATION = 3000; // 3 secondes
 const MAX_KILLS_DISPLAYED = 5; // Nombre maximum de kills affichés
 let killCount = 0; // Pour donner un ID unique à chaque kill
 
-// Pool d'éléments pour optimiser la performance
-const killElementPool = []; // Stock des éléments réutilisables
-const MAX_POOL_SIZE = 8; // Maximum 8 éléments dans le pool (plus que MAX_KILLS_DISPLAYED)
-const activeKillElements = new Set(); // Éléments actuellement affichés
-
 // Initialisation de l'interface HTML
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[Killfeed] DOM chargé, interface prête');
-    
-    // Pré-remplir le pool avec quelques éléments pour des performances optimales
-    initializeKillElementPool();
     
     // Signaler à FiveM que l'interface est prête
     const resourceName = 'killfeed';
@@ -27,19 +19,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-// Fonction pour pré-remplir le pool d'éléments au démarrage
-function initializeKillElementPool() {
-    const initialPoolSize = 3; // Créer 3 éléments à l'avance
-    
-    for (let i = 0; i < initialPoolSize; i++) {
-        const element = createNewKillElement();
-        resetKillElement(element); // S'assurer qu'il est prêt
-        killElementPool.push(element);
-    }
-    
-    console.log(`[Killfeed] Pool initialisé avec ${initialPoolSize} éléments`);
-}
 
 // Écouter les messages de FiveM
 window.addEventListener('message', function(event) {
@@ -61,106 +40,45 @@ window.addEventListener('message', function(event) {
 function showKill(killData) {
     console.log('[Killfeed] Affichage du kill:', killData);
     
-    // Emprunter un élément du pool (ou en créer un nouveau)
-    const killElement = borrowKillElement();
-    
-    // Remplir les données
-    fillKillData(killElement, killData);
+    // Créer un nouvel élément de kill
+    const killElement = createKillElement(killData);
     
     // Ajouter au container
     const container = document.getElementById('killfeed-container');
     container.appendChild(killElement);
     
-    // Programmer le retour automatique au pool
+    // Programmer la suppression automatique
+    const killElementParent = killElement.parentNode;
     setTimeout(() => {
-        if (killElement.parentNode) {
-            killElement.parentNode.removeChild(killElement);
+        if (killElementParent) {
+            killElement.remove();
         }
-        // Rendre l'élément au pool au lieu de le supprimer
-        returnKillElementToPool(killElement);
     }, KILLFEED_DURATION);
     
     // Limiter le nombre de kills affichés (max 5)
     limitKillFeedEntries();
 }
 
-// Fonction pour emprunter un élément du pool (ou en créer un nouveau)
-function borrowKillElement() {
-    let killElement;
-    
-    if (killElementPool.length > 0) {
-        // Il y a un élément disponible dans le pool → le réutiliser
-        killElement = killElementPool.pop();
-        console.log(`[Killfeed] Élément réutilisé du pool (${killElementPool.length} restants)`);
-    } else {
-        // Pas d'élément disponible → en créer un nouveau
-        killElement = createNewKillElement();
-        console.log('[Killfeed] Nouvel élément créé');
-    }
-    
-    // Préparer l'élément pour utilisation
-    killElement.style.display = 'block';
-    killElement.classList.add('active');
-    killElement.classList.remove('fade-out');
-    
-    // L'ajouter au tracking des éléments actifs
-    activeKillElements.add(killElement);
-    
-    return killElement;
-}
-
-// Fonction pour créer un nouvel élément HTML (utilisée quand le pool est vide)
-function createNewKillElement() {
+// Créer un élément HTML pour un kill
+function createKillElement(killData) {
     // Incrémenter le compteur pour un ID unique
     killCount++;
     
-    // Récupérer le template et le cloner
+    // Récupérer le template
     const template = document.getElementById('kill-template');
+
+    // Cloner le template en un élément Node
     const killElement = template.cloneNode(true);
     
-    // Donner un ID unique
+    // Donner un ID unique et rendre visible
     killElement.id = `kill-${killCount}`;
+    killElement.style.display = 'block';
+    killElement.classList.add('active');
+    
+    // Remplir les données
+    fillKillData(killElement, killData);
     
     return killElement;
-}
-
-// Fonction pour rendre un élément au pool après usage
-function returnKillElementToPool(killElement) {
-    // Retirer du tracking des éléments actifs
-    activeKillElements.delete(killElement);
-    
-    // Nettoyer l'élément pour réutilisation
-    resetKillElement(killElement);
-    
-    // Le remettre dans le pool s'il y a de la place
-    if (killElementPool.length < MAX_POOL_SIZE) {
-        killElementPool.push(killElement);
-        console.log(`[Killfeed] Élément rendu au pool (${killElementPool.length} disponibles)`);
-    } else {
-        // Pool plein → supprimer définitivement l'élément
-        killElement.remove();
-        console.log('[Killfeed] Élément supprimé (pool plein)');
-    }
-}
-
-// Fonction pour nettoyer un élément avant de le remettre dans le pool
-function resetKillElement(element) {
-    // Cacher l'élément et retirer les classes d'animation
-    element.style.display = 'none';
-    element.classList.remove('active', 'fade-out');
-    
-    // Vider le contenu pour éviter les fuites de données
-    const victimName = element.querySelector('.victim-name');
-    const bonuses = element.querySelector('.bonuses');
-    const basePoints = element.querySelector('.base-points');
-    const bonusPoints = element.querySelector('.bonus-points');
-    const totalPoints = element.querySelector('.total-points');
-    
-    if (victimName) victimName.textContent = '';
-    if (bonuses) bonuses.innerHTML = '';
-    if (basePoints) basePoints.textContent = '';
-    if (bonusPoints) bonusPoints.innerHTML = '';
-    if (totalPoints) totalPoints.textContent = '';
 }
 
 // Remplir les données dans l'élément HTML
@@ -223,10 +141,8 @@ function hideOldestKill() {
         
         setTimeout(() => {
             if (oldestKill.parentNode) {
-                oldestKill.parentNode.removeChild(oldestKill);
+                oldestKill.remove();
             }
-            // Rendre l'élément au pool au lieu de le supprimer
-            returnKillElementToPool(oldestKill);
         }, 300); // Animation de fadeout
     }
 }
@@ -241,12 +157,9 @@ function limitKillFeedEntries() {
         // excessKills stock les kills en trop
         const excessKills = Array.from(kills).slice(0, kills.length - MAX_KILLS_DISPLAYED);
 
-        // Retourner les kills en trop au pool
+        // Supprimer les kills en trop
         excessKills.forEach(kill => {
-            if (kill.parentNode) {
-                kill.parentNode.removeChild(kill);
-            }
-            returnKillElementToPool(kill);
+            kill.remove();
         });
     }
 }
