@@ -1,0 +1,18 @@
+# Configuration sensible
+config.lua
+!config.example.lua
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.bak
+*.backup

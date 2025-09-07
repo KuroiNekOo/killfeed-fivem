@@ -1,0 +1,1 @@
+print("^2[Killfeed] ^7Client démarré")

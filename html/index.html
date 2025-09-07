@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Killfeed NovaCity</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Container principal du killfeed -->
+    <div id="killfeed-container">
+        <!-- Template pour un kill (sera cloné par JS) -->
+        <div id="kill-template" class="kill-entry" style="display: none;">
+            <div class="kill-info">
+                <div class="victim-name"></div>
+                <div class="bonuses"></div>
+            </div>
+            <div class="points-section">
+                <div class="base-points"></div>
+                <div class="bonus-points"></div>
+                <div class="total-points"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
