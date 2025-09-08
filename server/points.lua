@@ -7,15 +7,16 @@ local lastKillTime = {}
 -- Fonction pour calculer les points et bonus (version sécurisée)
 function CalculateKillData(killerId, victimId, isHeadshot, distance)
     local killData = {
-        victim = "",
-        killer = "",
-        points = Config.Points.Kill,
-        bonuses = {},
-        totalPoints = Config.Points.Kill
+      victim = "",
+      killer = "",
+      points = Config.Points.Kill,
+      bonuses = {},
+      totalPoints = Config.Points.Kill
     }
-    
+
     -- Bonus headshot
     if isHeadshot then
+        -- killData.bonuses[#killData.bonuses + 1] = {type = "headshot", points = Config.Points.Headshot}
         table.insert(killData.bonuses, {type = "headshot", points = Config.Points.Headshot})
         killData.totalPoints = killData.totalPoints + Config.Points.Headshot
     end

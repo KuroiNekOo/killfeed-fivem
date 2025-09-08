@@ -1,6 +1,8 @@
 fx_version 'cerulean'
 game 'gta5'
 
+lua54 'yes' -- Activer Lua 5.4 pour les tables set et autres fonctionnalités
+
 author 'Xam42'
 description 'Killfeed NovaCity'
 version '1.0.0'

@@ -20,7 +20,10 @@ function MonitorNearbyNPCs()
     for _, npcPed in ipairs(nearbyPeds) do
         if DoesEntityExist(npcPed) and npcPed ~= playerPed and not IsPedAPlayer(npcPed) then
             local npcPos = GetEntityCoords(npcPed)
-            local distance = CalculateDistance(playerPos, npcPos)
+
+            -- Calculer la distance en utilisant la soustraction vectorielle
+            -- Fonctionne seulement avec des vecteurs
+            local distance = #(playerPos - npcPos)
             
             -- Seulement monitorer les PNJ proches pour éviter la surcharge
             if distance <= 100 then

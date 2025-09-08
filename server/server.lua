@@ -1,6 +1,5 @@
 print("^2[Killfeed] ^7Serveur démarré")
 
-
 -- Event principal : Détection d'un kill (version sécurisée avec validation renforcée)
 RegisterNetEvent('killfeed:playerKilled', function(killerId, victimId, isHeadshot, distance)
     -- Obtenir la source de l'événement (qui l'a envoyé)
@@ -60,21 +59,38 @@ RegisterNetEvent('killfeed:playerKilled', function(killerId, victimId, isHeadsho
     print("^2[Killfeed] ^7Données calculées, récupération nom Discord...")
     
     -- Récupérer le nom Discord de la victime
-    GetDiscordName(victimId, function(discordName)
-        print("^2[Killfeed] ^7Nom Discord récupéré: " .. tostring(discordName))
+    -- GetDiscordName(victimId, function(discordName)
+    --     print("^2[Killfeed] ^7Nom Discord récupéré: " .. tostring(discordName))
         
-        killData.victim = discordName
-        killData.killer = GetPlayerName(killerId) or ("Joueur#" .. killerId)
+    --     killData.victim = discordName
+    --     killData.killer = GetPlayerName(killerId) or ("Joueur#" .. killerId)
         
-        -- Envoyer à tous les clients pour affichage
-        -- L'argument (-1) = Déclencher l'event pour TOUS les clients
-        print(string.format("^1[DEBUG SERVER] ^7Envoi TriggerClientEvent killfeed:showKill à tous les clients"))
-        print(string.format("^1[DEBUG SERVER] ^7Données: killer=%s, victim=%s, points=%d", 
-            killData.killer, killData.victim, killData.totalPoints))
+    --     -- Envoyer à tous les clients pour affichage
+    --     -- L'argument (-1) = Déclencher l'event pour TOUS les clients
+    --     print(string.format("^1[DEBUG SERVER] ^7Envoi TriggerClientEvent killfeed:showKill à tous les clients"))
+    --     print(string.format("^1[DEBUG SERVER] ^7Données: killer=%s, victim=%s, points=%d", 
+    --         killData.killer, killData.victim, killData.totalPoints))
         
-        TriggerClientEvent('killfeed:showKill', -1, killData)
+    --     TriggerClientEvent('killfeed:showKill', -1, killData)
         
-        print(string.format("^3[Killfeed] ^7%s a tué %s (%d points)", 
-            killData.killer, killData.victim, killData.totalPoints))
+    --     print(string.format("^3[Killfeed] ^7%s a tué %s (%d points)", 
+    --         killData.killer, killData.victim, killData.totalPoints))
+    -- end)
+
+    killData.killer = GetPlayerName(killerId) or ("Joueur#" .. killerId)
+
+    killData.victim = isPvEKill and ("PNJ#" .. victimId) or (Player(victimId).state.discordName or GetPlayerName(victimId) or ("Joueur#" .. victimId))
+
+    TriggerClientEvent('killfeed:showKill', -1, killData)
+end)
+
+-- Event à ajouter pour pré-charger le nom Discord à la connexion
+AddEventHandler('playerJoining', function()
+    local source = source
+
+    -- Récupérer le nom Discord et le stocker
+    GetDiscordName(source, function(discordName)
+        Player(source).state.discordName = discordName
+        print("^2[Killfeed] ^7Discord statebag défini pour " .. source .. ": " .. discordName)
     end)
 end)

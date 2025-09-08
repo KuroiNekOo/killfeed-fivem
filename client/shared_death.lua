@@ -12,9 +12,9 @@ _G.monitoringThread = nil
 local FIREARM_GROUPS = {
     -- Nouvelle méthode par hash de groupe
     [416676503] = true, -- GROUP_PISTOL
-    [GetHashKey("GROUP_PISTOL")] = true,
+    [`GROUP_PISTOL`] = true,
     [GetHashKey("GROUP_SMG")] = true,
-    [GetHashKey("GROUP_RIFLE")] = true,
+    [joaat("GROUP_RIFLE")] = true, -- activer le LUA 5.4 dans le fxmanifest
     [GetHashKey("GROUP_SNIPER")] = true,
     [GetHashKey("GROUP_SHOTGUN")] = true,
     [GetHashKey("GROUP_LMG")] = true,
@@ -75,20 +75,6 @@ function IsHeadshot(victimPed)
     end
     
     return false
-end
-
--- Fonction optimisée pour calculer la distance
-function CalculateDistance(pos1, pos2)
-    if not pos1 or not pos2 then
-        return 0
-    end
-    
-    local dx = pos1.x - pos2.x
-    local dy = pos1.y - pos2.y
-    local dz = pos1.z - pos2.z
-    
-    -- Calcul la racine carrée de la somme des carrés ci-dessus
-    return math.sqrt(dx * dx + dy * dy + dz * dz)
 end
 
 -- Fonction pour valider un kill
@@ -169,10 +155,13 @@ function ProcessPlayerDeath(victimId, npcPed, killType)
         return
     end
     
-    -- Calculer la distance
+    -- Récupérer les positions en vecteurs
     local killerPos = GetEntityCoords(killerEntity)
     local victimPos = GetEntityCoords(victimPed)
-    local distance = CalculateDistance(killerPos, victimPos)
+
+    -- Calculer la distance en utilisant la soustraction vectorielle
+    -- Fonctionne seulement avec des vecteurs
+    local distance = #(killerPos - victimPos)
     
     -- Valider le kill
     local isValid, reason = IsValidKill(killerServerId, victimServerId, distance)
@@ -194,7 +183,7 @@ function ProcessPlayerDeath(victimId, npcPed, killType)
     
     print(string.format("^1[DEBUG] ^7TriggerServerEvent: killer=%d, victim=%d, headshot=%s, distance=%.1f", 
         killerServerId, actualVictimId, tostring(isHeadshot), distance))
-    
+
     TriggerServerEvent('killfeed:playerKilled', killerServerId, actualVictimId, isHeadshot, distance)
 end
 
