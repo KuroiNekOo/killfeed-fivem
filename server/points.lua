@@ -21,9 +21,13 @@ function CalculateKillData(killerId, victimId, isHeadshot, distance)
     end
     
     -- Bonus longue distance
+    print(string.format("^1[DEBUG POINTS] ^7Distance: %.1fm, Seuil: %.1fm, Bonus: %s", 
+        distance, Config.LongDistanceThreshold, distance >= Config.LongDistanceThreshold and "OUI" or "NON"))
+    
     if distance >= Config.LongDistanceThreshold then
         table.insert(killData.bonuses, {type = "longdistance", points = Config.Points.LongDistance})
         killData.totalPoints = killData.totalPoints + Config.Points.LongDistance
+        print(string.format("^2[DEBUG POINTS] ^7Bonus longue distance ajouté: %d points", Config.Points.LongDistance))
     end
     
     -- Gestion kill streak (version sécurisée)

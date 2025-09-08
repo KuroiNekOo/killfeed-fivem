@@ -18,6 +18,12 @@ Config.KillfeedDuration = 3000          -- 3 secondes d'affichage
 Config.EnablePvP = true                 -- Activer la détection PvP (joueur vs joueur)
 Config.EnablePvE = true                 -- Activer la détection PvE (joueur vs PNJ) - utile pour les tests
 
+-- Configuration du système de monitoring
+Config.MonitoringInterval = 1000        -- Intervalle de surveillance (ms)
+Config.CleanupInterval = 30000          -- Intervalle de nettoyage (ms)  
+Config.DeathStabilizationDelay = 300    -- Délai de stabilisation après mort (ms)
+Config.MaxKillDistance = 1000           -- Distance max pour un kill valide (mètres)
+
 -- Discord API - REMPLACEZ PAR VOS VRAIES VALEURS
 Config.Discord = {
     BaseURL = "https://discord.com/api/v10",

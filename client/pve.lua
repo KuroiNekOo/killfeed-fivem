@@ -41,7 +41,7 @@ function MonitorNearbyNPCs()
                         print(string.format("^3[Killfeed] ^7Mort PvE détectée: PNJ %s", npcId))
                         
                         -- Délai pour stabilisation
-                        Citizen.SetTimeout(KILLFEED_SHARED.DEATH_STABILIZATION_DELAY, function()
+                        Citizen.SetTimeout(Config.DeathStabilizationDelay, function()
                             -- Créer un faux playerId pour ProcessPlayerDeath
                             local fakePlayerId = -1 -- ID spécial pour PNJ
                             print(string.format("^1[DEBUG] ^7Appel ProcessPlayerDeath pour PNJ: playerId=%d, npcPed=%s", 
@@ -82,7 +82,7 @@ function StartPvEMonitoring()
             -- Monitorer les PNJ pour les tests PvE
             MonitorNearbyNPCs()
             
-            Citizen.Wait(KILLFEED_SHARED.MONITORING_INTERVAL)
+            Citizen.Wait(Config.MonitoringInterval)
         end
         
         print("^3[Killfeed] ^7Thread PvE terminé")

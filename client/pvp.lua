@@ -24,7 +24,7 @@ function UpdatePlayerData(playerId, serverId, ped)
         print(string.format("^3[Killfeed] ^7Mort PvP détectée: joueur %d", serverId))
         
         -- Délai pour stabilisation des données de mort
-        Citizen.SetTimeout(KILLFEED_SHARED.DEATH_STABILIZATION_DELAY, function()
+        Citizen.SetTimeout(Config.DeathStabilizationDelay, function()
             ProcessPlayerDeath(playerId, nil, "pvp")
         end)
     end
@@ -62,7 +62,7 @@ function StartPvPMonitoring()
                 end
             end
             
-            Citizen.Wait(KILLFEED_SHARED.MONITORING_INTERVAL)
+            Citizen.Wait(Config.MonitoringInterval)
         end
         
         print("^3[Killfeed] ^7Thread PvP terminé")

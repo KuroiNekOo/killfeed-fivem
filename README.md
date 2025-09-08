@@ -66,7 +66,7 @@ killfeed/
 ### Modules Spécialisés
 
 #### 📋 `shared_death.lua` - Fonctions Communes
-- **Configuration partagée** : Constantes globales (`KILLFEED_SHARED`)
+- **Configuration centralisée** : Utilise les constantes de `Config` pour une gestion unifiée
 - **Cache d'armes** : Optimisation des vérifications d'armes (`weaponHashCache`)
 - **Détection headshot** : Analyse des os de tête (bones 31086, 39317, 57597)
 - **Calcul de distance** : Formule euclidienne 3D optimisée
@@ -138,6 +138,14 @@ Config.KillfeedDuration = 3000          -- Durée d'affichage (ms)
 ```lua
 Config.EnablePvP = true                 -- Activer détection PvP
 Config.EnablePvE = true                 -- Activer détection PvE (tests)
+```
+
+### Configuration du Monitoring
+```lua
+Config.MonitoringInterval = 1000        -- Intervalle de surveillance (ms)
+Config.CleanupInterval = 30000          -- Intervalle de nettoyage (ms)
+Config.DeathStabilizationDelay = 300    -- Délai de stabilisation après mort (ms)
+Config.MaxKillDistance = 1000           -- Distance max pour un kill valide (mètres)
 ```
 
 ### Configuration Discord

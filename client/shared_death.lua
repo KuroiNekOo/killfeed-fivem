@@ -1,12 +1,6 @@
 print("^2[Killfeed] ^7Module Shared chargé")
 
--- Configuration partagée
-KILLFEED_SHARED = {
-    MONITORING_INTERVAL = 1000, -- ms
-    CLEANUP_INTERVAL = 30000,   -- ms
-    DEATH_STABILIZATION_DELAY = 300, -- ms
-    MAX_KILL_DISTANCE = 1000,   -- mètres max pour un kill valide
-}
+-- Configuration partagée déplacée dans config.lua
 
 -- Variables globales partagées
 _G.playerData = {} -- Données des joueurs trackés
@@ -105,7 +99,7 @@ function IsValidKill(killerServerId, victimServerId, distance)
     -- end
     
     -- Vérifier distance raisonnable
-    if distance > KILLFEED_SHARED.MAX_KILL_DISTANCE then
+    if distance > Config.MaxKillDistance then
         return false, "distance_trop_grande"
     end
     
@@ -222,7 +216,7 @@ end
 -- Thread de nettoyage optimisé (partagé)
 Citizen.CreateThread(function()
     while true do
-        Citizen.Wait(KILLFEED_SHARED.CLEANUP_INTERVAL)
+        Citizen.Wait(Config.CleanupInterval)
         
         local currentTime = GetGameTimer()
         local cleanedCount = 0
