@@ -31,6 +31,9 @@ client_scripts {
     'config.lua',
     'client/ui.lua',
     'client/events.lua',
+    'client/shared_death.lua',  -- Fonctions communes (doit être chargé en premier)
+    'client/pvp.lua',     -- Module PvP
+    'client/pve.lua',     -- Module PvE
     'client/commands.lua',
     'client/client.lua'
 }

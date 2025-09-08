@@ -10,9 +10,11 @@ RegisterCommand('testkill', function(source, args)
     print("^2[Killfeed] ^7Commande testkill exécutée par: " .. tostring(source))
     
     local isHeadshot = math.random(1, 2) == 1  -- 50% de chance
-    local distance = math.random(50, 300)      -- Distance aléatoire
-    
-    print(string.format("^2[Killfeed] ^7Test: headshot=%s, distance=%d", 
+
+    -- Créer une distance random en floats
+    local distance = math.random(50, 300) / 1.0      -- Distance aléatoire
+
+    print(string.format("^2[Killfeed] ^7Test: headshot=%s, distance=%.1f", 
         tostring(isHeadshot), distance))
     
     TriggerEvent('killfeed:playerKilled', source, source, isHeadshot, distance)

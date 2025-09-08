@@ -14,6 +14,10 @@ Config.LongDistanceThreshold = 200.0    -- Distance en mètres
 Config.KillStreakTimeout = 30000        -- 30 secondes entre kills pour série
 Config.KillfeedDuration = 3000          -- 3 secondes d'affichage
 
+-- Fonctionnalités de détection
+Config.EnablePvP = true                 -- Activer la détection PvP (joueur vs joueur)
+Config.EnablePvE = true                 -- Activer la détection PvE (joueur vs PNJ) - utile pour les tests
+
 -- Discord API - REMPLACEZ PAR VOS VRAIES VALEURS
 Config.Discord = {
     BaseURL = "https://discord.com/api/v10",
