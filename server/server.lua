@@ -2,8 +2,7 @@ print("^2[Killfeed] ^7Serveur démarré")
 
 
 -- Event principal : Détection d'un kill (version sécurisée avec validation renforcée)
-RegisterNetEvent('killfeed:playerKilled')
-AddEventHandler('killfeed:playerKilled', function(killerId, victimId, isHeadshot, distance)
+RegisterNetEvent('killfeed:playerKilled', function(killerId, victimId, isHeadshot, distance)
     -- Obtenir la source de l'événement (qui l'a envoyé)
     local source = source
     
@@ -79,4 +78,3 @@ AddEventHandler('killfeed:playerKilled', function(killerId, victimId, isHeadshot
             killData.killer, killData.victim, killData.totalPoints))
     end)
 end)
-
